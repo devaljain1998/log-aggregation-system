@@ -1,16 +1,8 @@
-from typing import Optional
-from fastapi import FastAPI, HTTPException
-from elasticsearch import Elasticsearch
-import os
-from routers import health_router
+from fastapi import FastAPI
+from routers import health_router, logs_router
+from es import elastic_client
 
 app = FastAPI()
-
-# Global singleton for Elasticsearch client
-ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
-elastic_client = Elasticsearch([ELASTICSEARCH_HOST])
-if not elastic_client.ping():
-    raise HTTPException(status_code=500, detail="Elasticsearch cluster is not available")
 
 INDEX_NAME = "logs"
 
@@ -21,3 +13,4 @@ def startup():
 
 # Include the health and logs routers in the main app
 app.include_router(health_router)
+app.include_router(logs_router)
