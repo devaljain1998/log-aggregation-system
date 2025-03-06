@@ -1,41 +1,26 @@
-from fastapi import APIRouter, HTTPException
-from elasticsearch import Elasticsearch
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
 from typing import Optional
+from app.schemas import LogEntry
+from app.services import LogIngestionService, LogQueryService
+from app.repository import LogRepository
 from es import elastic_client
 
-logs_router = APIRouter()
+logs_router = APIRouter(
+    prefix="/logs", tags=["Logs"])
 
-INDEX_NAME = "logs"
+log_repository = LogRepository(elastic_client)
+log_ingestion_service = LogIngestionService(log_repository)
+log_query_service = LogQueryService(log_repository)
 
-class LogEntry(BaseModel):
-    timestamp: str
-    level: str
-    message: str
-    service: str
-
-@logs_router.post("/logs/")
+@logs_router.post("/ingest")
 def ingest_log(log: LogEntry):
-    res = elastic_client.index(index=INDEX_NAME, body=log.model_dump())
-    return res["result"]
+    return log_ingestion_service.ingest_log(log)
 
-@logs_router.get("/search/")
-def search_logs(query: Optional[str] = None, level: Optional[str] = None, service: Optional[str] = None, start_time: Optional[str] = None, end_time: Optional[str] = None):
-    search_query = {"query": {"bool": {"must": []}}}
-    
-    if query:
-        search_query["query"]["bool"]["must"].append({"match": {"message": query}})
-    if level:
-        search_query["query"]["bool"]["must"].append({"match": {"level": level}})
-    if service:
-        search_query["query"]["bool"]["must"].append({"match": {"service": service}})
-    if start_time and end_time:
-        search_query["query"]["bool"]["must"].append({"range": {"timestamp": {"gte": start_time, "lte": end_time}}})
-    
-    res = elastic_client.search(index=INDEX_NAME, body=search_query)
-    return res["hits"]["hits"]
+@logs_router.get("/search")
+def search_logs(query: Optional[str] = None, level: Optional[str] = None, service: Optional[str] = None, start_time: Optional[str] = None, end_time: Optional[str] = None):    
+    return log_query_service.query_logs(query, level, service, start_time, end_time)
 
-@logs_router.get("/aggregate/")
+@logs_router.get("/aggregate")
 def aggregate_logs(field: str):
     agg_query = {
         "size": 0,
@@ -45,5 +30,4 @@ def aggregate_logs(field: str):
             }
         }
     }
-    res = elastic_client.search(index=INDEX_NAME, body=agg_query)
-    return res["aggregations"]["log_count"]["buckets"]
+    return log_query_service.query_logs(agg_query)
