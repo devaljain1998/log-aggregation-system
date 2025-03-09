@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-bugbear]
+
+  -   repo: https://github.com/PyCQA/autoflake
+      rev: v1.7.7
+      hooks:
+        - id: autoflake
+          args: [--in-place, --remove-all-unused-imports]
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3
+
+
+  # -   repo: https://github.com/hhatto/autopep8
+  #     rev: v2.0.2 # Or latest
+  #     hooks:
+  #       - id: autopep8
+  #         args: [--in-place, --max-line-length=79]
+default_language_version:
+  python: python3.9
+exclude: '^(\.git|\.mypy_cache|\.pytest_cache|\.tox|\.venv|__pycache__|\.cache/pre-commit/)/'
