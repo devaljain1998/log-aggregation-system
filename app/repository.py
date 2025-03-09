@@ -9,6 +9,8 @@ LOGS_INDEX = "logs"
 
 class LogRepository:
     def __init__(self, es_client: Elasticsearch):
+        if es_client is None:
+            raise ValueError("Elasticsearch client is not initialized")
         self.es_client = es_client
 
     def save_log(self, log_entry: LogEntry):

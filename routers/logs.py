@@ -1,19 +1,37 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import Optional
 from app.schemas import LogEntry
 from app.services import LogIngestionService, LogQueryService
 from app.repository import LogRepository
-from es import elastic_client
+from es import get_or_create_elasticsearch_client
 
 logs_router = APIRouter(prefix="/logs", tags=["Logs"])
 
-log_repository = LogRepository(elastic_client)
-log_ingestion_service = LogIngestionService(log_repository)
-log_query_service = LogQueryService(log_repository)
+
+def get_log_repository() -> LogRepository:
+    elastic_client = get_or_create_elasticsearch_client()
+    return LogRepository(elastic_client)
+
+
+def get_log_ingestion_service(
+    log_repository: LogRepository = Depends(get_log_repository),  # noqa: B008
+) -> LogIngestionService:
+    return LogIngestionService(log_repository)
+
+
+def get_log_query_service(
+    log_repository: LogRepository = Depends(get_log_repository),  # noqa: B008
+) -> LogQueryService:
+    return LogQueryService(log_repository)
 
 
 @logs_router.post("/ingest")
-def ingest_log(log: LogEntry):
+def ingest_log(
+    log: LogEntry,
+    log_ingestion_service: LogIngestionService = Depends(  # noqa: B008
+        get_log_ingestion_service
+    ),
+):
     return log_ingestion_service.ingest_log(log)
 
 
@@ -24,6 +42,9 @@ def search_logs(
     service: Optional[str] = None,
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
+    log_query_service: LogQueryService = Depends(  # noqa: B008
+        get_log_query_service
+    ),  # noqa: B008
 ):
     return log_query_service.query_logs(
         query, level, service, start_time, end_time
@@ -34,6 +55,9 @@ def search_logs(
 def aggregate_logs(
     service: Optional[str] = None,
     log_level: Optional[str] = None,
+    log_query_service: LogQueryService = Depends(  # noqa: B008
+        get_log_query_service
+    ),
 ):
     if not service and not log_level:
         raise ValueError(

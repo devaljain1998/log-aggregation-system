@@ -1,17 +1,32 @@
 import os
 from fastapi import HTTPException
 from elasticsearch import Elasticsearch
-
 from loguru import logger
 
-# Global singleton for Elasticsearch client
 ELASTICSEARCH_HOST = os.getenv(
     "ELASTICSEARCH_HOST", "http://elasticsearch:9200"
 )
-elastic_client = Elasticsearch([ELASTICSEARCH_HOST])
+
+# Initialize `elastic_client` as None
+elastic_client: Elasticsearch = None
+
+
+def get_or_create_elasticsearch_client(
+    host: str = ELASTICSEARCH_HOST,
+) -> Elasticsearch:
+    global elastic_client
+    if elastic_client is None:
+        logger.info(f"Connecting to Elasticsearch at {host}")
+        elastic_client = Elasticsearch([host])
+        logger.info(f"Connected to Elasticsearch at {host}")
+    return elastic_client
 
 
 def check_elasticsearch():
+    if elastic_client is None:
+        raise HTTPException(
+            status_code=500, detail="Elasticsearch client is not initialized"
+        )
     if not elastic_client.ping():
         raise HTTPException(
             status_code=500, detail="Elasticsearch cluster is not available"
