@@ -32,6 +32,9 @@ def ingest_log(
         get_log_ingestion_service
     ),
 ):
+    """
+    Ingest a log entry into the system.
+    """
     return log_ingestion_service.ingest_log(log)
 
 
@@ -46,6 +49,10 @@ def search_logs(
         get_log_query_service
     ),  # noqa: B008
 ):
+    """
+    Search logs based on various filters.
+    """
+
     return log_query_service.query_logs(
         query, level, service, start_time, end_time
     )
@@ -59,6 +66,13 @@ def aggregate_logs(
         get_log_query_service
     ),
 ):
+    """
+    Endpoint to aggregate logs based on service and/or log level.
+
+    Raises:
+        ValueError: If neither service nor log_level is provided.
+    """
+
     if not service and not log_level:
         raise ValueError(
             "At least one filter (service or log_level) must be provided"
