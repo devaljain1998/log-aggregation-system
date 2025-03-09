@@ -45,3 +45,38 @@ class LogRepository:
 
         response = self.es_client.search(index=LOGS_INDEX, body=search_query)
         return response["hits"]["hits"]
+
+    def count_by_field(
+        self, service: Optional[str] = None, log_level: Optional[str] = None
+    ):
+        if not service and not log_level:
+            raise ValueError(
+                "At least one filter (service or log_level) must be provided"
+            )
+
+        search_query = {
+            "size": 0,
+            "query": {"bool": {"must": []}},
+            "aggs": {"counts": {"composite": {"sources": []}}},
+        }
+
+        # Add filters if provided
+        search_match_query = search_query["query"]["bool"]["must"]
+        search_count_query = search_query["aggs"]["counts"]["composite"][
+            "sources"
+        ]
+        if service:
+            search_match_query.append({"term": {"service": service}})
+            search_count_query.append(
+                {"service": {"terms": {"field": "service"}}}
+            )
+
+        if log_level:
+            search_match_query.append({"term": {"level": log_level}})
+            search_count_query.append(
+                {"log_level": {"terms": {"field": "level"}}}
+            )
+
+        logger.debug(f"count by field query: {search_query}")
+        response = self.es_client.search(index=LOGS_INDEX, body=search_query)
+        return response["aggregations"]["counts"]["buckets"]

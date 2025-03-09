@@ -26,3 +26,8 @@ class LogQueryService:
         return self.log_repository.search_logs(
             query, level, service, start_time, end_time
         )
+
+    def count_by_field(
+        self, service: Optional[str] = None, log_level: Optional[str] = None
+    ):
+        return self.log_repository.count_by_field(service, log_level)

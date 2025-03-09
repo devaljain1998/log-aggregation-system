@@ -31,6 +31,13 @@ def search_logs(
 
 
 @logs_router.get("/aggregate")
-def aggregate_logs(field: str):
-    agg_query = {"size": 0, "aggs": {"log_count": {"terms": {"field": field}}}}
-    return log_query_service.query_logs(agg_query)
+def aggregate_logs(
+    service: Optional[str] = None,
+    log_level: Optional[str] = None,
+):
+    if not service and not log_level:
+        raise ValueError(
+            "At least one filter (service or log_level) must be provided"
+        )
+
+    return log_query_service.count_by_field(service, log_level)

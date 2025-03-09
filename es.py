@@ -9,10 +9,14 @@ ELASTICSEARCH_HOST = os.getenv(
     "ELASTICSEARCH_HOST", "http://elasticsearch:9200"
 )
 elastic_client = Elasticsearch([ELASTICSEARCH_HOST])
-if not elastic_client.ping():
-    raise HTTPException(
-        status_code=500, detail="Elasticsearch cluster is not available"
-    )
+
+
+def check_elasticsearch():
+    if not elastic_client.ping():
+        raise HTTPException(
+            status_code=500, detail="Elasticsearch cluster is not available"
+        )
+    logger.info("Elasticsearch cluster is available")
 
 
 def create_index(index: str):
